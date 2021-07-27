@@ -156,8 +156,6 @@ int SoapyICR8600::readData(SoapySDR::Stream* stream, void* buff) {
 		}
 	}
 
-	double amin = 1e33;
-	double amax = -1e33;
 	if (rxFormat == RX_FORMAT_FLOAT32) {
 		float* ftarget = (float*)buff0;
 		for (ULONG p = 0; p < cbRead / 4; p++) {
@@ -165,13 +163,9 @@ int SoapyICR8600::readData(SoapySDR::Stream* stream, void* buff) {
 			if (c1 != 0x00 || c2 != 0x80 || c3 != 0x00 || c4 != 0x80) {
 				ftarget[returnedElems++] = (float)(source[2 * p]) / 32768;
 				ftarget[returnedElems++] = (float)(source[2 * p + 1]) / 32768;
-				if (ftarget[returnedElems - 1] > amax)amax = ftarget[returnedElems - 1];
-				if (ftarget[returnedElems - 1] < amin)amin = ftarget[returnedElems - 1];
 			}
 		}
 	}
-
-	//fprintf(stderr,"returnedElems %d bufferLength %lld amin %g amax %g\n", returnedElems / 2, bufferLength,amin, amax);
 
 	return returnedElems / 2;
 
@@ -193,58 +187,58 @@ int SoapyICR8600::readStream(SoapySDR::Stream *stream, void * const *buffs, cons
 
 	returnedElems = 0;
 
-			if (saveLength > 0) {
-				if (numElem <= saveLength) {
-					std::memcpy(buff, saveBuffer + saveStart, numElem * size);
-					saveStart += numElem * size;
-					saveLength -= numElem;
-					return (int)numElem;
-				} else {
-					std::memcpy(buff, saveBuffer + saveStart, saveLength * size);
-					numElem -= saveLength;
-					buff += size * saveLength;
-					returnedElems += saveLength;
-					saveLength = 0;
-				}
-			}
+	if (saveLength > 0) {
+		if (numElem <= saveLength) {
+			std::memcpy(buff, saveBuffer + saveStart, numElem * size);
+			saveStart += numElem * size;
+			saveLength -= numElem;
+			return (int)numElem;
+		} else {
+			std::memcpy(buff, saveBuffer + saveStart, saveLength * size);
+			numElem -= saveLength;
+			buff += size * saveLength;
+			returnedElems += saveLength;
+			saveLength = 0;
+		}
+	}
 
-			int iread = 0;
+	int iread = 0;
 
-			while (numElem >= bufferLength/4) {
-				iread = readData(stream, buff);
-				if (iread < 0)continue;
-				buff += (size_t)iread * size;
-				numElem -= iread;
-				returnedElems += iread;
-			}
+	while (numElem >= bufferLength/4) {
+		iread = readData(stream, buff);
+		if (iread < 0)continue;
+		buff += (size_t)iread * size;
+		numElem -= iread;
+		returnedElems += iread;
+	}
 
-			if (numElem == 0) {
-				saveLength = 0;
-				return (int)numElems;
-			}
+	if (numElem == 0) {
+		saveLength = 0;
+		return (int)numElems;
+	}
 
-			iread = readData(stream, saveBuffer);
+	iread = readData(stream, saveBuffer);
 
-			if (iread <= 0) {
-				saveLength = 0;
-				return (int)returnedElems;
-			}
+	if (iread <= 0) {
+		saveLength = 0;
+		return (int)returnedElems;
+	}
 
-			if(iread <= numElem){
-				saveLength = 0;
-				returnedElems += iread;
-				return (int)returnedElems;
-			}
+	if(iread <= numElem){
+		saveLength = 0;
+		returnedElems += iread;
+		return (int)returnedElems;
+	}
 
-			std::memcpy(buff, saveBuffer, numElem * size);
+	std::memcpy(buff, saveBuffer, numElem * size);
 
-			saveLength = iread-numElem;
+	saveLength = iread-numElem;
 
-			saveStart = numElem * size;
+	saveStart = numElem * size;
 
-			returnedElems += numElem;
+	returnedElems += numElem;
 
-			if (returnedElems != numElems)fprintf(stderr, "readStream error %lld %lld\n", returnedElems, numElems);
+	if (returnedElems != numElems)fprintf(stderr, "readStream error %lld %lld\n", returnedElems, numElems);
 
 	return (int)returnedElems;
 }
