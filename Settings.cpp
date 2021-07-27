@@ -29,7 +29,13 @@ SoapyICR8600::SoapyICR8600(const SoapySDR::Kwargs &args)
 	antennaIndex = 0;
 
 	bufferLength = DEFAULT_BUFFER_LENGTH;
-	bufferData = NULL;
+	bufferData = NULL;	
+	
+	saveLength=0;
+	saveBuffer = NULL;
+
+
+
 
 	BOOL noDevice;
 	HRESULT hr = OpenDevice(&deviceData, &noDevice);
@@ -534,6 +540,7 @@ void SoapyICR8600::setSampleRate(const int direction, const size_t channel, cons
 	sampleRate = (ULONG)rate;
 	SoapySDR_logf(SOAPY_SDR_INFO, "Setting sample rate: %d", sampleRate);
 	ICR8600SetSampleRate(deviceData.WinusbHandle, sampleRate);
+	saveLength = 0;
 }
 
 double SoapyICR8600::getSampleRate(const int direction, const size_t channel) const

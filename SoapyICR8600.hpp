@@ -89,6 +89,9 @@ public:
 		long long &timeNs,
 		const long timeoutUs = 100000);
 
+	int SoapyICR8600::readData(SoapySDR::Stream* stream, void* buff);
+
+
 	/*******************************************************************
 	 * Direct buffer access API
 	 ******************************************************************/
@@ -200,6 +203,12 @@ private:
 	int antennaIndex;
 	size_t bufferLength;
 	unsigned char *bufferData;
+
+	size_t saveLength;
+	size_t saveStart;
+	unsigned char *saveBuffer;
+
+
 
 	// mutex protection because we need to be thread safe
 	mutable std::mutex	_device_mutex;
